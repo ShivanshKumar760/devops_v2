@@ -1,0 +1,11 @@
+controller:
+  replicaCount: 1                      # small edge nodes; raise later
+  nodeSelector: {pool: edge}
+  service:
+    enableHttps: false                 # TLS ends at the GLB, so only port 80 is needed
+    annotations:
+      service.beta.kubernetes.io/do-loadbalancer-type: "REGIONAL"
+      service.beta.kubernetes.io/do-loadbalancer-name: "leetcode-${REGION}"
+      service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+      service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+      service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/healthz"

@@ -25,7 +25,7 @@ def build_mongo_uri():
     if not host:
         return None
     user = quote_plus(os.environ["MONGO_USER"])
-    password = quote_plus(os.environ["MANGO_PASSWORD"])
+    password = quote_plus(os.environ["MONGO_PASSWORD"])
     return f"mongodb://{user}:{password}@{host}:27017/?authSource=admin"
 
 MONGO_URI = build_mongo_uri()
@@ -102,7 +102,7 @@ def same(got,expected):
     return got == expected
 
 def judge(problem,user_code):
-    tests = problem["test"]
+    tests = problem["tests"]
     for number , test in enumerate(tests,start=1):
         args , expected = test["args"],test["expected"]
         script = (user_code + "\n\nimport json\n"

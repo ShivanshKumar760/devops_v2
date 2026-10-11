@@ -3,4 +3,4 @@ RUN pip install --no-cache-dir flask==3.0.3 gunicorn==22.0.0
 WORKDIR /app
 COPY runner/runner.py .
 USER 10001
-CMD ["gunicorn","runner:app","--bind","0.0.0.0:5001","--worker","2"]
+CMD ["gunicorn","runner:app","--bind","0.0.0.0:5001","--workers","2"]

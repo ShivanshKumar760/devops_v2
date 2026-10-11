@@ -1,0 +1,225 @@
+# ${REGION}, ${IMAGE_PREFIX}, ${TAG} are filled in by scripts/deploy.sh (envsubst).
+apiVersion: v1
+kind: Namespace
+metadata: {name: leetcode}
+---
+# ================= RUNNER: private, runs untrusted code =================
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: runner, namespace: leetcode}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: runner}}
+  template:
+    metadata: {labels: {app: runner}}
+    spec:
+      # Edge-node config: run ONLY on the tainted "sandbox" node pool, away from the judge
+      nodeSelector: {pool: sandbox}
+      tolerations:
+        - {key: dedicated, operator: Equal, value: sandbox, effect: NoSchedule}
+      topologySpreadConstraints:          # spread replicas over different nodes
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: {matchLabels: {app: runner}}
+      automountServiceAccountToken: false # submitted code can't talk to the Kubernetes API
+      securityContext: {runAsNonRoot: true, runAsUser: 10001}
+      containers:
+        - name: runner
+          image: ${IMAGE_PREFIX}/leetcode-runner:${TAG}
+          ports: [{containerPort: 5001}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true  # only /tmp is writable
+            capabilities: {drop: ["ALL"]}
+          resources:
+            requests: {cpu: 250m, memory: 256Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          readinessProbe: {httpGet: {path: /, port: 5001}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {sizeLimit: 128Mi}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: runner, namespace: leetcode}
+spec:                                     # ClusterIP (default) = only reachable inside the cluster
+  selector: {app: runner}
+  ports: [{port: 5001, targetPort: 5001}]
+---
+# Runner accepts traffic ONLY from the judge, and can call out to NOTHING (no internet).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: runner-lockdown, namespace: leetcode}
+spec:
+  podSelector: {matchLabels: {app: runner}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app: judge}}}]
+      ports: [{port: 5001}]
+  egress: []
+---
+# Add more runner pods automatically when submissions pile up.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: runner, namespace: leetcode}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: runner}
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}
+---
+# ================= MONGODB: stores problems + submissions =================
+# The password lives in a Secret called "mongo-auth". It is NOT in this file (so it never
+# lands in git); scripts/deploy.sh creates it once per cluster.
+#
+# StatefulSet (not Deployment) because a database needs a stable identity and its own disk.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: mongo, namespace: leetcode}
+spec:
+  serviceName: mongo
+  replicas: 1
+  selector: {matchLabels: {app: mongo}}
+  template:
+    metadata: {labels: {app: mongo}}
+    spec:
+      nodeSelector: {pool: edge}
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, fsGroup: 999}
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          ports: [{containerPort: 27017}]
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom: {secretKeyRef: {name: mongo-auth, key: username}}
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom: {secretKeyRef: {name: mongo-auth, key: password}}
+          resources:
+            requests: {cpu: 250m , memory: 512Mi}
+            limits: {cpu: "1" , memory: 1Gi}
+          readinessProbe:
+            exec: {command: ["mongosh","--quiet","--eval","db.adminCommand('ping').ok"]}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts: [{name: data, mountPath: /data/db}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: do-block-storage
+        resources: {requests: {storage: 5Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mongo, namespace: leetcode}
+spec:
+  clusterIP: None
+  selector: {app: mongo}
+  ports: [{port: 27017}]
+---
+# Only the judge may talk to MongoDB. The runner (untrusted code) cannot reach it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: mongo-lockdown, namespace: leetcode}
+spec:
+  podSelector: {matchLabels: {app: mongo}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app: judge}}}]
+      ports: [{port: 27017}]
+---
+# ================= JUDGE: public website + API =================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: judge
+  namespace: leetcode
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: judge
+  template:
+    metadata:
+      labels:
+        app: judge
+    spec:
+      nodeSelector: {pool: edge}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: {matchLabels: {app: judge}}
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true , runAsUser: 10001}
+      containers:
+      - name: judge
+        image: ${IMAGE_PREFIX}/leetcode-judge:${TAG}
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+        ports:
+        - containerPort: 8080
+        env:
+          - {name: REGION , value: "${REGION}"}
+          - {name: RUNNER_HOSTPORT , value: "runner:5001"}
+          - {name: MONGO_HOST, value: "mongo"}
+          - name: MONGO_USER
+            valueFrom: {secretKeyRef: {name: mongo-auth, key: username}}
+          - name: MONGO_PASSWORD
+            valueFrom: {secretKeyRef: {name: mongo-auth, key: password}}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: ["ALL"]}
+        readinessProbe: {httpGet: {path: /ready , port: 8080}}
+        volumeMounts: [{name: tmp , mountPath: /tmp}]
+      volumes: [{name: tmp , emptyDir: {sizeLimit: 64Mi}}]  
+---
+# type: LoadBalancer makes DigitalOcean create a REGIONAL load balancer for this cluster.
+# The Global Load Balancer (Step 6) will later sit in front of the three regional ones.
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: judge
+#   namespace: leetcode
+#   annotations:
+#     # Must be REGIONAL (HTTP): newer DOKS defaults to a network LB, which can't go behind a GLB.
+#     service.beta.kubernetes.io/do-loadbalancer-type: "REGIONAL"
+#     service.beta.kubernetes.io/do-loadbalancer-name: "leetcode-${REGION}"
+#     service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+#     service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+#     service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/health"
+# spec:
+#   type: LoadBalancer
+#   selector: {app: judge}
+#   ports:
+#     - {name: http, port: 80, targetPort: 8080}
+
+
+apiVersion: v1
+kind: Service
+metadata: {name: judge, namespace: leetcode}
+spec:
+  selector: {app: judge}
+  ports: [{name: http, port: 80, targetPort: 8080}]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: judge, namespace: leetcode}
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:                            # no "host": the GLB health check calls /health with the LB's IP as host
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: judge, port: {number: 80}}}
