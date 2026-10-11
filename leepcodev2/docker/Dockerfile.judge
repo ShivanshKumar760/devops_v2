@@ -1,0 +1,8 @@
+FROM python:3.12-slim
+RUN pip install --no-cache-dir flask==3.0.3 gunicorn==22.0.0 requests==2.32.3 pymongo==4.10.1
+WORKDIR /app
+COPY judge/judge.py judge/index.html ./
+USER 10001
+# State now lives in MongoDB (not in this process), so more workers would also be safe.
+# 1 worker + 4 threads keeps memory small.
+CMD ["gunicorn", "judge:app", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "4", "--timeout", "120"]
