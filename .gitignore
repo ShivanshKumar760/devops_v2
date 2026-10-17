@@ -6,3 +6,4 @@ do_kube_config
 *.tfstate.*
 .terraform/
 terraform.tfvars
+node_modules
