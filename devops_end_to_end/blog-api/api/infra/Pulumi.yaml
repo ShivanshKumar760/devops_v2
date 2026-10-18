@@ -1,0 +1,7 @@
+name: multicluster-infra
+description: Blog API on DigitalOcean (single droplet or autoscaled pool)
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+    typescript: true
