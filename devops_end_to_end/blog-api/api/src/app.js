@@ -7,6 +7,8 @@ import { env } from './config/env.js';
 import { errorHandler, notFound } from './middleware/error.js';
 import authRoutes from './routes/auth.routes.js';
 import postsRoutes from './routes/posts.routes.js';
+import stressRoutes from './routes/stress.routes.js';
+
 
 export const app = express();
 
@@ -27,7 +29,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
-
+if (env.enableStress) app.use('/stress',stressRoutes);
 // Order matters: 404 handler, then the error handler, both LAST.
 app.use(notFound);
 app.use(errorHandler);
