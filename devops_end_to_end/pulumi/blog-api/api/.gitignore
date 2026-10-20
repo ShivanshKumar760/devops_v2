@@ -1,0 +1,19 @@
+node_modules
+.env
+*.log
+.DS_Store
+node_modules
+.env
+*.log
+.DS_Store
+
+# Pulumi
+infra/Pulumi.*.yaml
+infra/.pulumi/
+infra/bin/
+*.pem
+
+*.pulumi
+.pulumi
+bin
+Pulumi.*.yaml
