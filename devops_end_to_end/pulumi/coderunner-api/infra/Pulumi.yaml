@@ -1,0 +1,6 @@
+name: multicluster-runner-infra
+description: Code runner API on DigitalOcean (single droplet or autoscaled pool)
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm

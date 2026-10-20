@@ -1,0 +1,14 @@
+{
+  "name": "multicluster-runner-infra",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "dependencies": {
+    "@pulumi/digitalocean": "^4.56.0",
+    "@pulumi/pulumi": "^3.183.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
