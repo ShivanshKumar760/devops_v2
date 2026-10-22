@@ -133,7 +133,7 @@ Header image from the original article (the only image URL the page exposed): ![
 3. **Connect → Drivers** and copy the connection string. Insert the database name before the `?`:
 
    ```
-   mongodb+srv://todo_app:<password>@cluster0.xxxxx.mongodb.net/tododb?retryWrites=true&w=majority
+   mongodb+srv://<db-user>:<db-password>@<cluster-host>/tododb?retryWrites=true&w=majority
    ```
 
    If the password contains special characters, URL-encode them (`@` becomes `%40`, `/` becomes `%2F`, `#` becomes `%23`). A simple alphanumeric password avoids the problem.
@@ -200,7 +200,7 @@ Express 5 forwards errors from `async` route handlers to the error middleware au
 ```ini
 PORT=3000
 NODE_ENV=development
-MONGODB_URI=mongodb+srv://todo_app:<password>@cluster0.xxxxx.mongodb.net/tododb?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://<db-user>:<db-password>@<cluster-host>/tododb?retryWrites=true&w=majority
 # openssl rand -base64 48
 JWT_SECRET=change-me
 JWT_EXPIRES_IN=1h
@@ -802,7 +802,7 @@ User data is a script that EC2 runs **once, as root, on the first boot** of each
 set -eu
 
 # ======== EDIT THESE VALUES, then paste the whole script into the launch template ========
-MONGODB_URI='mongodb+srv://todo_app:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/tododb?retryWrites=true&w=majority'
+MONGODB_URI='mongodb+srv://<db-user>:<db-password>@<cluster-host>/tododb?retryWrites=true&w=majority'
 JWT_SECRET='PASTE_OUTPUT_OF__openssl_rand_-base64_48'
 JWT_EXPIRES_IN='1h'
 # ===========================================================================================
