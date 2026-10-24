@@ -316,7 +316,7 @@ The simple API is now fully deployed. You can leave it running while you do Part
 3. Build the final URI by replacing `<password>` with the real password and adding the database name `bankDB` before the `?`:
 
    ```
-   mongodb+srv://bank_app:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/bankDB?retryWrites=true&w=majority
+   mongodb+srv://<db-user>:<db-password>@<cluster-host>/bankDB?retryWrites=true&w=majority
    ```
 
    If the password has special characters, URL-encode them (`@` is `%40`, `/` is `%2F`, `#` is `%23`).
@@ -451,7 +451,7 @@ Keep a copy of this value somewhere safe, like a password manager. Reuse it on e
 Put the Atlas URI in a shell variable (use your real value, keep the single quotes):
 
 ```bash
-export MONGO_URI='mongodb+srv://bank_app:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/bankDB?retryWrites=true&w=majority'
+export MONGO_URI='mongodb+srv://<db-user>:<db-password>@<cluster-host>/bankDB?retryWrites=true&w=majority'
 ```
 
 Build the Terraform variable. `jq` escapes special characters correctly:
@@ -677,7 +677,7 @@ packer init . && packer build -var 'repo_url=https://github.com/ShivanshKumar760
 cd ../terraform
 terraform init && terraform apply -var create_asg=false
 terraform output nat_gateway_public_ips          # allow this IP in Atlas, wait for Active
-export MONGO_URI='mongodb+srv://...'
+export MONGO_URI='<your-atlas-connection-string>'
 export TF_VAR_app_env="$(jq -nc --arg uri "$MONGO_URI" --arg jwt "$(cat ../jwt.secret)" \
   '{MONGO_URI: $uri, JWT_SECRET: $jwt, DB_POOL_SIZE: "5"}')"
 terraform apply
