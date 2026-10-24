@@ -7,3 +7,192 @@ do_kube_config
 .terraform/
 terraform.tfvars
 node_modules
+
+node_modules/
+.env
+.deployed-commit
+
+# ---------------------------------------------------------
+# Terraform working directories (provider plugins, modules)
+# ---------------------------------------------------------
+**/.terraform/*
+
+# ---------------------------------------------------------
+# State files (can contain secrets in plain text)
+# ---------------------------------------------------------
+*.tfstate
+*.tfstate.*
+
+# ---------------------------------------------------------
+# Crash logs
+# ---------------------------------------------------------
+crash.log
+crash.*.log
+
+# ---------------------------------------------------------
+# Variable files (often contain secrets or environment values)
+# ---------------------------------------------------------
+*.tfvars
+*.tfvars.json
+
+# Keep example variable files so others know what to set
+!example.tfvars
+!*.tfvars.example
+
+# ---------------------------------------------------------
+# Override files (local-only changes)
+# ---------------------------------------------------------
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ---------------------------------------------------------
+# Saved plan files
+# ---------------------------------------------------------
+*.tfplan
+tfplan
+plan.out
+
+# ---------------------------------------------------------
+# CLI configuration files
+# ---------------------------------------------------------
+.terraformrc
+terraform.rc
+
+# ---------------------------------------------------------
+# Terragrunt cache (only if you use Terragrunt)
+# ---------------------------------------------------------
+.terragrunt-cache/
+
+# ---------------------------------------------------------
+# Secrets and credentials (safety net)
+# ---------------------------------------------------------
+*.pem
+*.key
+.env
+.env.*
+credentials
+*.secret
+
+# ---------------------------------------------------------
+# Editor and OS files
+# ---------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+
+# ---------------------------------------------------------
+# Terraform working directories (provider plugins, modules)
+# ---------------------------------------------------------
+**/.terraform/*
+
+# ---------------------------------------------------------
+# State files (can contain secrets in plain text)
+# ---------------------------------------------------------
+*.tfstate
+*.tfstate.*
+
+# ---------------------------------------------------------
+# Crash logs
+# ---------------------------------------------------------
+crash.log
+crash.*.log
+
+# ---------------------------------------------------------
+# Variable files (often contain secrets or environment values)
+# ---------------------------------------------------------
+*.tfvars
+*.tfvars.json
+
+# Keep example variable files so others know what to set
+!example.tfvars
+!*.tfvars.example
+
+# ---------------------------------------------------------
+# Override files (local-only changes)
+# ---------------------------------------------------------
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ---------------------------------------------------------
+# Saved plan files
+# ---------------------------------------------------------
+*.tfplan
+tfplan
+plan.out
+
+# ---------------------------------------------------------
+# CLI configuration files
+# ---------------------------------------------------------
+.terraformrc
+terraform.rc
+
+# ---------------------------------------------------------
+# Terragrunt cache (only if you use Terragrunt)
+# ---------------------------------------------------------
+.terragrunt-cache/
+
+# ---------------------------------------------------------
+# Packer: cache, build output, variable files
+# ---------------------------------------------------------
+packer_cache/
+**/packer_cache/
+
+# Variable files (often contain secrets such as cloud credentials)
+*.pkrvars.hcl
+*.auto.pkrvars.hcl
+*.pkrvars.json
+
+# Keep example variable files
+!example.pkrvars.hcl
+!*.pkrvars.hcl.example
+
+# Build output directories and manifests
+output-*/
+packer-manifest.json
+manifest.json
+
+# Built images and disk artifacts
+*.box
+*.ova
+*.ovf
+*.vmdk
+*.vdi
+*.qcow2
+*.iso
+*.img
+*.raw
+
+# Packer crash logs and debug files
+packer-debug.log
+crash.log
+
+# ---------------------------------------------------------
+# Secrets and credentials (safety net)
+# ---------------------------------------------------------
+*.pem
+*.key
+.env
+.env.*
+credentials
+*.secret
+
+# ---------------------------------------------------------
+# Editor and OS files
+# ---------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.terraform.lock.hcl
