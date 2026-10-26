@@ -1,0 +1,84 @@
+#cloud-config
+package_update: true
+packages:
+  - python3-venv
+  - python3-dev
+  - libpq-dev
+  - build-essential
+  - git
+  - curl
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+
+write_files:
+  # Secrets file; moved into the app folder after the repo is cloned
+  - path: /root/flask-api.env
+    permissions: "0600"
+    content: |
+      JWT_SECRET_KEY=${jwt_secret}
+      DATABASE_URL=${database_url}
+
+  - path: /etc/nginx/snippets/api-proxy.conf
+    content: |
+      proxy_pass         http://127.0.0.1:8000;
+      proxy_set_header   Host              $host;
+      proxy_set_header   X-Real-IP         $remote_addr;
+      proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header   X-Forwarded-Proto $scheme;
+      proxy_read_timeout 30s;
+
+  - path: /etc/nginx/sites-available/api
+    content: |
+      limit_req_zone $binary_remote_addr zone=auth_zone:10m rate=5r/m;
+      limit_req_zone $binary_remote_addr zone=exec_zone:10m rate=10r/m;
+
+      server {
+          listen 80;
+          listen [::]:80;
+          server_name ${fqdn};
+          client_max_body_size 1m;
+
+          location = /signin {
+              limit_req zone=auth_zone burst=5 nodelay;
+              include /etc/nginx/snippets/api-proxy.conf;
+          }
+          location = /signup {
+              limit_req zone=auth_zone burst=5 nodelay;
+              include /etc/nginx/snippets/api-proxy.conf;
+          }
+          location = /execute {
+              limit_req zone=exec_zone burst=5 nodelay;
+              include /etc/nginx/snippets/api-proxy.conf;
+          }
+          location / {
+              include /etc/nginx/snippets/api-proxy.conf;
+          }
+      }
+
+  - path: /root/start-api.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      # Installs Pyker (per its README) and starts app.py. Unverified: check
+      # https://github.com/mrvi0/pyker if this fails.
+      export HOME=/root
+      export PATH="$PATH:/root/.local/bin"
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      echo 'export PATH="/root/.local/bin:$PATH"' >> /root/.bashrc
+      source /root/.bashrc
+      uv tool install git+https://github.com/mrvi0/pyker.git
+      cd /root/flask-api
+      pyker start flask-api app.py --venv venv --auto-restart
+      PYKER_BIN=$(command -v pyker)
+      (crontab -l 2>/dev/null; echo "@reboot cd /root/flask-api && $PYKER_BIN start flask-api app.py --venv venv --auto-restart") | crontab -
+
+runcmd:
+  - git clone ${repo_url} /root/flask-api
+  - mv /root/flask-api.env /root/flask-api/.env
+  - python3 -m venv /root/flask-api/venv
+  - /root/flask-api/venv/bin/pip install -r /root/flask-api/requirements.txt
+  - ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/api
+  - rm -f /etc/nginx/sites-enabled/default
+  - nginx -t && systemctl reload nginx
+  - /root/start-api.sh
