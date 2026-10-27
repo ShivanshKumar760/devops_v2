@@ -393,7 +393,7 @@ In another terminal: `curl localhost:3000/health` and `curl "localhost:3000/load
 3. **Connect, Drivers** and copy the connection string. Replace `<password>` with the real password and add the database name `blogdb` before the `?`:
 
    ```
-   mongodb+srv://blog_app:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/blogdb?retryWrites=true&w=majority
+   mongodb+srv://<username>:<password>@<cluster-host>/blogdb?retryWrites=true&w=majority
    ```
 
    If the password contains special characters, URL-encode them (`@` is `%40`, `/` is `%2F`, `#` is `%23`).
@@ -1918,7 +1918,7 @@ ls
 Terraform reads any environment variable called `TF_VAR_<variable name>` as the value of that variable. Run these in the terminal you will use for `terraform` (use your real Atlas string from section 4, and keep the single quotes):
 
 ```bash
-export TF_VAR_mongodb_uri='mongodb+srv://blog_app:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/blogdb?retryWrites=true&w=majority'
+export TF_VAR_mongodb_uri='mongodb+srv://<username>:<password>@<cluster-host>/blogdb?retryWrites=true&w=majority'
 export TF_VAR_jwt_secret="$(openssl rand -base64 48)"
 ```
 
