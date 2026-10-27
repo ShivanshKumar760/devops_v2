@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+src/generated/
+.env
+venv/
+__pycache__/
+*.pyc
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/terraform.tfvars
+.terraform.lock.hcl
+.terraform
+*.tfstate*
+terraform.tfvars
